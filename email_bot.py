@@ -1,18 +1,13 @@
 """
 Voice-Activated Email Bot
-=========================
 Inspired by my sister's MYP Personal Project (2021-2022).
-
-Compose and send emails with just your voice.
-Uses speech recognition + text-to-speech + Gmail SMTP.
 
 Setup:
   1. pip install -r requirements.txt
-  2. Generate a Gmail App Password:
-     Google Account > Security > 2-Step Verification > App Passwords
-  3. Copy .env and fill in your Gmail address and App Password.
-  4. Update the CONTACTS dictionary with your own contacts.
-  5. Run:  python email_bot.py
+  2. Generate a Gmail App Password
+  3. Fill in .env with your credentials
+  4. Update CONTACTS below
+  5. Run: python email_bot.py
 """
 
 import os
@@ -22,31 +17,23 @@ import pyttsx3
 from dotenv import load_dotenv
 from email.message import EmailMessage
 
-# load secrets from .env
 load_dotenv()
 GMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS")
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-
-# ElevenLabs voice config
-# pick a voice from https://elevenlabs.io/voice-library
 ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "JBFqnCBsd6RMkjVDRZzb")
 ELEVENLABS_MODEL = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
 
-# nicknames mapped to email addresses so the bot
-# doesn't have to parse something like "john dot doe at gmail dot com"
+# nicknames instead of real addresses so the mic doesn't have to parse
+# "john dot doe at gmail dot com"
 CONTACTS = {
     "dude": "erenatsuidesu@gmail.com",
     "car": "bicycleandcar@gmail.com",
-    # "mom": "mom.email@gmail.com",
-    # "best friend": "friend@gmail.com",
 }
 
-# speech engines
 listener = sr.Recognizer()
 engine = pyttsx3.init()
 
-# try loading ElevenLabs, fall back to pyttsx3 if it's not set up
 eleven_client = None
 eleven_play = None
 if ELEVENLABS_API_KEY:
@@ -62,10 +49,7 @@ else:
     print("[TTS] No ElevenLabs key, using pyttsx3.")
 
 
-# -- text-to-speech -----------------------------------------------------------
-
 def _talk_elevenlabs(text):
-    """Send text to ElevenLabs and play the audio. Returns True if it worked."""
     try:
         audio = eleven_client.text_to_speech.convert(
             text=text,
@@ -75,33 +59,28 @@ def _talk_elevenlabs(text):
         )
         eleven_play(audio)
         return True
-    except Exception as e:
-        print(f"[TTS] ElevenLabs failed ({e}), switching to pyttsx3.")
+    except Exception:
         return False
 
 
 def _talk_pyttsx3(text):
-    """Offline fallback voice."""
     engine.say(text)
     engine.runAndWait()
 
 
 def talk(text):
-    """Say something out loud. Tries ElevenLabs first, pyttsx3 if that fails."""
     print(f"[Bot] {text}")
-    if eleven_client and not _talk_elevenlabs(text):
-        _talk_pyttsx3(text)
-    elif not eleven_client:
+    # try ElevenLabs, fall back to pyttsx3 per-call so the bot
+    # keeps working if ElevenLabs dies mid-session
+    if eleven_client:
+        if not _talk_elevenlabs(text):
+            _talk_pyttsx3(text)
+    else:
         _talk_pyttsx3(text)
 
-
-# -- speech-to-text ------------------------------------------------------------
 
 def get_info(retries=3):
-    """
-    Listen through the mic and return what the user said (lowercase).
-    Retries a few times if it can't understand, then gives up.
-    """
+    # retries cap prevents infinite recursion from background noise
     if retries <= 0:
         talk("I still couldn't understand. Let's move on.")
         return None
@@ -125,10 +104,7 @@ def get_info(retries=3):
         return None
 
 
-# -- email sending -------------------------------------------------------------
-
 def send_email(receiver, subject, message):
-    """Log into Gmail SMTP and fire off the email."""
     server = smtplib.SMTP("smtp.gmail.com", 587)
     server.starttls()
     server.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
@@ -143,11 +119,7 @@ def send_email(receiver, subject, message):
     server.quit()
 
 
-# -- main loop -----------------------------------------------------------------
-
 def get_email_info():
-    """Walk through: who to send to, subject, body, then send it."""
-
     talk("To whom do you want to send an email?")
     available = ", ".join(CONTACTS.keys())
     talk(f"Your contacts are: {available}")
