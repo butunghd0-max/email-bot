@@ -10,7 +10,7 @@ and Gmail's SMTP server to deliver your messages.
 Setup:
   1. pip install -r requirements.txt
   2. Generate a Gmail App Password:
-     Google Account → Security → 2-Step Verification → App Passwords
+     Google Account > Security > 2-Step Verification > App Passwords
   3. Replace YOUR_EMAIL and YOUR_APP_PASSWORD below with your credentials.
   4. Update the CONTACTS dictionary with your own contacts.
   5. Run:  python email_bot.py
@@ -46,7 +46,7 @@ engine = pyttsx3.init()
 # ── Step 2: The "Mouth" (Text-to-Speech) ────────────────────────────────────
 def talk(text):
     """Make the bot speak the given text aloud."""
-    print(f"🤖  {text}")
+    print(f"[Bot] {text}")
     engine.say(text)
     engine.runAndWait()
 
@@ -60,11 +60,11 @@ def get_info():
     """
     try:
         with sr.Microphone() as source:
-            print("🎤  Listening...")
+            print("Listening...")
             listener.adjust_for_ambient_noise(source, duration=0.5)
             voice = listener.listen(source)
             info = listener.recognize_google(voice)
-            print(f"📝  You said: {info}")
+            print(f"You said: {info}")
             return info.lower()
     except sr.UnknownValueError:
         talk("Sorry, I didn't catch that. Could you repeat?")
@@ -73,7 +73,7 @@ def get_info():
         talk("Sorry, my speech service is down right now.")
         return None
     except Exception as e:
-        print(f"⚠️  Error: {e}")
+        print(f"Error: {e}")
         return None
 
 
@@ -101,7 +101,7 @@ def send_email(receiver, subject, message):
 def get_email_info():
     """
     Walk the user through composing an email entirely by voice:
-    recipient → subject → body → send → ask to repeat.
+    recipient, subject, body, send, ask to repeat.
     """
     # --- Who to send to ---
     talk("To whom do you want to send an email?")
@@ -118,7 +118,7 @@ def get_email_info():
         talk(f"I don't have a contact called '{name}'. Please try again.")
         return get_email_info()
 
-    print(f"📧  Sending to: {receiver}")
+    print(f"Sending to: {receiver}")
 
     # --- Subject ---
     talk("What is the subject of your email?")
@@ -141,7 +141,7 @@ def get_email_info():
         talk("Your email has been sent!")
     except Exception as e:
         talk("Something went wrong while sending your email.")
-        print(f"⚠️  SMTP Error: {e}")
+        print(f"SMTP Error: {e}")
         return
 
     # --- Loop? ---
@@ -157,6 +157,6 @@ def get_email_info():
 if __name__ == "__main__":
     print("=" * 50)
     print("  VOICE-ACTIVATED EMAIL BOT")
-    print("  Say your commands — no typing needed!")
+    print("  Say your commands, no typing needed!")
     print("=" * 50)
     get_email_info()

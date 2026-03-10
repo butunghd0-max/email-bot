@@ -1,19 +1,19 @@
-# 🎙️ Voice-Activated Email Bot
+# Voice-Activated Email Bot
 
 > _Inspired by my sister's MYP Personal Project (2021-2022)_
 
-A Python bot that lets you **compose and send emails entirely by voice** — no typing needed. Built with speech recognition, text-to-speech, and Gmail's SMTP server.
+A Python bot that lets you **compose and send emails entirely by voice**, no typing needed. Built with speech recognition, text-to-speech, and Gmail's SMTP server.
 
 ---
 
 ## How It Works
 
-| Step | Component        | Library                         | Purpose                                                    |
-| ---- | ---------------- | ------------------------------- | ---------------------------------------------------------- |
-| 1    | **Mouth**        | `pyttsx3`                       | Speaks prompts and confirmations aloud                     |
-| 2    | **Ears**         | `SpeechRecognition` + `PyAudio` | Listens via microphone, converts speech → text             |
-| 3    | **Email Engine** | `smtplib` + `email.message`     | Connects to Gmail SMTP and sends the message               |
-| 4    | **Logic Loop**   | Python                          | Guides the conversation: recipient → subject → body → send |
+| Step | Component        | Library                         | Purpose                                                 |
+| ---- | ---------------- | ------------------------------- | ------------------------------------------------------- |
+| 1    | **Mouth**        | `pyttsx3`                       | Speaks prompts and confirmations aloud                  |
+| 2    | **Ears**         | `SpeechRecognition` + `PyAudio` | Listens via microphone, converts speech to text         |
+| 3    | **Email Engine** | `smtplib` + `email.message`     | Connects to Gmail SMTP and sends the message            |
+| 4    | **Logic Loop**   | Python                          | Guides the conversation: recipient, subject, body, send |
 
 ---
 
@@ -29,7 +29,7 @@ Make sure [Python 3.8+](https://www.python.org/downloads/) is installed and avai
 pip install -r requirements.txt
 ```
 
-> **⚠️ PyAudio troubleshooting (Windows):** If `pip install pyaudio` fails, try:
+> **PyAudio troubleshooting (Windows):** If `pip install pyaudio` fails, try:
 >
 > ```bash
 > pip install pipwin
@@ -40,9 +40,9 @@ pip install -r requirements.txt
 
 Google no longer supports "less secure app access." You need an **App Password**:
 
-1. Go to [Google Account → Security](https://myaccount.google.com/security)
+1. Go to [Google Account > Security](https://myaccount.google.com/security)
 2. Enable **2-Step Verification** (if not already on)
-3. Go to **App Passwords** → Generate one for "Mail"
+3. Go to **App Passwords** > Generate one for "Mail"
 4. Copy the **16-character password**
 
 ### 4. Configure the Bot
@@ -75,13 +75,13 @@ python email_bot.py
 
 ```
 Email bot (inspired by my sister the goat)/
-├── email_bot.py       # Main bot script
-├── requirements.txt   # Python dependencies
-└── README.md          # This file
+|-- email_bot.py       # Main bot script
+|-- requirements.txt   # Python dependencies
+|-- README.md          # This file
 ```
 
 ---
 
 ## Background
 
-During the COVID-19 pandemic, staying connected through email became important but tedious — especially for students doing home-based learning. This project was born from the idea that **voice commands** (like talking to Alexa) could make sending personal emails faster and more accessible for everyone.
+During the COVID-19 pandemic, staying connected through email became important but tedious, especially for students doing home-based learning. This project was born from the idea that **voice commands** (like talking to Alexa) could make sending personal emails faster and more accessible for everyone.
