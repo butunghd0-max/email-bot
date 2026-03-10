@@ -11,21 +11,24 @@ Setup:
   1. pip install -r requirements.txt
   2. Generate a Gmail App Password:
      Google Account > Security > 2-Step Verification > App Passwords
-  3. Replace YOUR_EMAIL and YOUR_APP_PASSWORD below with your credentials.
+  3. Copy .env and fill in your Gmail address and App Password.
   4. Update the CONTACTS dictionary with your own contacts.
   5. Run:  python email_bot.py
 """
 
+import os
 import smtplib
 import speech_recognition as sr
 import pyttsx3
+from dotenv import load_dotenv
 from email.message import EmailMessage
 
-# ── Configuration ────────────────────────────────────────────────────────────
-# Replace these with your actual Gmail credentials.
-# NEVER commit real passwords to version control!
-GMAIL_ADDRESS = "YOUR_EMAIL@gmail.com"
-GMAIL_APP_PASSWORD = "YOUR_APP_PASSWORD"  # 16-char App Password from Google
+# -- Configuration ------------------------------------------------------------
+# Credentials are loaded from a .env file in the same directory.
+# See .env.example for the required variables.
+load_dotenv()
+GMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS")
+GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
 
 # ── Contact Dictionary ───────────────────────────────────────────────────────
 # Map easy-to-say nicknames to real email addresses so the bot doesn't have
@@ -52,12 +55,19 @@ def talk(text):
 
 
 # ── Step 3: The "Ears" (Speech-to-Text) ──────────────────────────────────────
-def get_info():
+def get_info(retries=3):
     """
     Listen through the microphone, convert speech to text using
     Google's speech recognition API, and return the result as
     a lowercase string.  Returns None if recognition fails.
+
+    Retries up to `retries` times on unrecognized speech before
+    giving up, to avoid infinite recursion from background noise.
     """
+    if retries <= 0:
+        talk("I still couldn't understand. Let's move on.")
+        return None
+
     try:
         with sr.Microphone() as source:
             print("Listening...")
@@ -68,7 +78,7 @@ def get_info():
             return info.lower()
     except sr.UnknownValueError:
         talk("Sorry, I didn't catch that. Could you repeat?")
-        return get_info()  # retry once
+        return get_info(retries - 1)
     except sr.RequestError:
         talk("Sorry, my speech service is down right now.")
         return None

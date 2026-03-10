@@ -47,14 +47,14 @@ Google no longer supports "less secure app access." You need an **App Password**
 
 ### 4. Configure the Bot
 
-Open `email_bot.py` and replace:
+Open the `.env` file and fill in your credentials:
 
-```python
-GMAIL_ADDRESS = "YOUR_EMAIL@gmail.com"
-GMAIL_APP_PASSWORD = "YOUR_APP_PASSWORD"
+```
+GMAIL_ADDRESS=your.email@gmail.com
+GMAIL_APP_PASSWORD=abcdefghijklmnop
 ```
 
-Update the `CONTACTS` dictionary with your own contacts:
+Then open `email_bot.py` and update the `CONTACTS` dictionary with your own contacts:
 
 ```python
 CONTACTS = {
@@ -77,6 +77,8 @@ python email_bot.py
 Email bot (inspired by my sister the goat)/
 |-- email_bot.py       # Main bot script
 |-- requirements.txt   # Python dependencies
+|-- .env               # Your Gmail credentials (git-ignored)
+|-- .gitignore         # Keeps .env out of version control
 |-- README.md          # This file
 ```
 
