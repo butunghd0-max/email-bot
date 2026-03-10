@@ -3,9 +3,8 @@ Voice-Activated Email Bot
 =========================
 Inspired by my sister's MYP Personal Project (2021-2022).
 
-This bot lets you compose and send emails entirely by voice.
-It uses speech recognition to listen, text-to-speech to talk back,
-and Gmail's SMTP server to deliver your messages.
+Compose and send emails with just your voice.
+Uses speech recognition + text-to-speech + Gmail SMTP.
 
 Setup:
   1. pip install -r requirements.txt
@@ -23,36 +22,31 @@ import pyttsx3
 from dotenv import load_dotenv
 from email.message import EmailMessage
 
-# -- Configuration ------------------------------------------------------------
-# Credentials are loaded from a .env file in the same directory.
-# See .env.example for the required variables.
+# load secrets from .env
 load_dotenv()
 GMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS")
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 
-# ElevenLabs voice settings.
-# Browse voices at https://elevenlabs.io/voice-library
-# Default: "George" (JBFqnCBsd6RMkjVDRZzb)
+# ElevenLabs voice config
+# pick a voice from https://elevenlabs.io/voice-library
 ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "JBFqnCBsd6RMkjVDRZzb")
 ELEVENLABS_MODEL = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
 
-# ── Contact Dictionary ───────────────────────────────────────────────────────
-# Map easy-to-say nicknames to real email addresses so the bot doesn't have
-# to parse complex email strings from speech.
+# nicknames mapped to email addresses so the bot
+# doesn't have to parse something like "john dot doe at gmail dot com"
 CONTACTS = {
     "dude": "erenatsuidesu@gmail.com",
     "car": "bicycleandcar@gmail.com",
-    # Add your own contacts here, e.g.:
     # "mom": "mom.email@gmail.com",
     # "best friend": "friend@gmail.com",
 }
 
-# ── Initialize Speech Engines ────────────────────────────────────────────────
+# speech engines
 listener = sr.Recognizer()
 engine = pyttsx3.init()
 
-# Try to set up ElevenLabs client (optional).
+# try loading ElevenLabs, fall back to pyttsx3 if it's not set up
 eleven_client = None
 eleven_play = None
 if ELEVENLABS_API_KEY:
@@ -61,16 +55,17 @@ if ELEVENLABS_API_KEY:
         from elevenlabs.play import play as eleven_play_fn
         eleven_client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
         eleven_play = eleven_play_fn
-        print("[TTS] ElevenLabs connected. Using AI voice.")
+        print("[TTS] ElevenLabs connected.")
     except Exception as e:
-        print(f"[TTS] Could not load ElevenLabs ({e}). Using offline voice.")
+        print(f"[TTS] Couldn't load ElevenLabs ({e}), using pyttsx3.")
 else:
-    print("[TTS] No ELEVENLABS_API_KEY set. Using offline voice (pyttsx3).")
+    print("[TTS] No ElevenLabs key, using pyttsx3.")
 
 
-# ── Step 2: The "Mouth" (Text-to-Speech) ────────────────────────────────────
+# -- text-to-speech -----------------------------------------------------------
+
 def _talk_elevenlabs(text):
-    """Try to speak using ElevenLabs. Returns True on success."""
+    """Send text to ElevenLabs and play the audio. Returns True if it worked."""
     try:
         audio = eleven_client.text_to_speech.convert(
             text=text,
@@ -81,21 +76,18 @@ def _talk_elevenlabs(text):
         eleven_play(audio)
         return True
     except Exception as e:
-        print(f"[TTS] ElevenLabs failed ({e}), falling back to offline voice.")
+        print(f"[TTS] ElevenLabs failed ({e}), switching to pyttsx3.")
         return False
 
 
 def _talk_pyttsx3(text):
-    """Speak using the offline pyttsx3 engine."""
+    """Offline fallback voice."""
     engine.say(text)
     engine.runAndWait()
 
 
 def talk(text):
-    """
-    Make the bot speak the given text aloud.
-    Uses ElevenLabs if available, otherwise falls back to pyttsx3.
-    """
+    """Say something out loud. Tries ElevenLabs first, pyttsx3 if that fails."""
     print(f"[Bot] {text}")
     if eleven_client and not _talk_elevenlabs(text):
         _talk_pyttsx3(text)
@@ -103,15 +95,12 @@ def talk(text):
         _talk_pyttsx3(text)
 
 
-# ── Step 3: The "Ears" (Speech-to-Text) ──────────────────────────────────────
+# -- speech-to-text ------------------------------------------------------------
+
 def get_info(retries=3):
     """
-    Listen through the microphone, convert speech to text using
-    Google's speech recognition API, and return the result as
-    a lowercase string.  Returns None if recognition fails.
-
-    Retries up to `retries` times on unrecognized speech before
-    giving up, to avoid infinite recursion from background noise.
+    Listen through the mic and return what the user said (lowercase).
+    Retries a few times if it can't understand, then gives up.
     """
     if retries <= 0:
         talk("I still couldn't understand. Let's move on.")
@@ -136,12 +125,10 @@ def get_info(retries=3):
         return None
 
 
-# ── Step 4: The Email Engine ─────────────────────────────────────────────────
+# -- email sending -------------------------------------------------------------
+
 def send_email(receiver, subject, message):
-    """
-    Connect to Gmail's SMTP server, authenticate, build an
-    EmailMessage, and send it.
-    """
+    """Log into Gmail SMTP and fire off the email."""
     server = smtplib.SMTP("smtp.gmail.com", 587)
     server.starttls()
     server.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
@@ -156,13 +143,11 @@ def send_email(receiver, subject, message):
     server.quit()
 
 
-# ── Step 5: Main Conversation Loop ──────────────────────────────────────────
+# -- main loop -----------------------------------------------------------------
+
 def get_email_info():
-    """
-    Walk the user through composing an email entirely by voice:
-    recipient, subject, body, send, ask to repeat.
-    """
-    # --- Who to send to ---
+    """Walk through: who to send to, subject, body, then send it."""
+
     talk("To whom do you want to send an email?")
     available = ", ".join(CONTACTS.keys())
     talk(f"Your contacts are: {available}")
@@ -179,19 +164,16 @@ def get_email_info():
 
     print(f"Sending to: {receiver}")
 
-    # --- Subject ---
     talk("What is the subject of your email?")
     subject = get_info()
     if subject is None:
         subject = "(no subject)"
 
-    # --- Body ---
     talk("Tell me the text of your email.")
     message = get_info()
     if message is None:
         message = ""
 
-    # --- Confirm & Send ---
     talk(f"Alright, I'll send an email to {name} with subject: {subject}.")
     talk("Sending now...")
 
@@ -203,7 +185,6 @@ def get_email_info():
         print(f"SMTP Error: {e}")
         return
 
-    # --- Loop? ---
     talk("Do you want to send another email?")
     send_more = get_info()
     if send_more and "yes" in send_more:
@@ -212,7 +193,6 @@ def get_email_info():
         talk("Goodbye! Have a great day.")
 
 
-# ── Entry Point ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     print("=" * 50)
     print("  VOICE-ACTIVATED EMAIL BOT")
