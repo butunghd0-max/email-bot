@@ -29,6 +29,13 @@ from email.message import EmailMessage
 load_dotenv()
 GMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS")
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+
+# ElevenLabs voice settings.
+# Browse voices at https://elevenlabs.io/voice-library
+# Default: "George" (JBFqnCBsd6RMkjVDRZzb)
+ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "JBFqnCBsd6RMkjVDRZzb")
+ELEVENLABS_MODEL = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
 
 # ── Contact Dictionary ───────────────────────────────────────────────────────
 # Map easy-to-say nicknames to real email addresses so the bot doesn't have
@@ -45,13 +52,55 @@ CONTACTS = {
 listener = sr.Recognizer()
 engine = pyttsx3.init()
 
+# Try to set up ElevenLabs client (optional).
+eleven_client = None
+eleven_play = None
+if ELEVENLABS_API_KEY:
+    try:
+        from elevenlabs.client import ElevenLabs
+        from elevenlabs.play import play as eleven_play_fn
+        eleven_client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+        eleven_play = eleven_play_fn
+        print("[TTS] ElevenLabs connected. Using AI voice.")
+    except Exception as e:
+        print(f"[TTS] Could not load ElevenLabs ({e}). Using offline voice.")
+else:
+    print("[TTS] No ELEVENLABS_API_KEY set. Using offline voice (pyttsx3).")
+
 
 # ── Step 2: The "Mouth" (Text-to-Speech) ────────────────────────────────────
-def talk(text):
-    """Make the bot speak the given text aloud."""
-    print(f"[Bot] {text}")
+def _talk_elevenlabs(text):
+    """Try to speak using ElevenLabs. Returns True on success."""
+    try:
+        audio = eleven_client.text_to_speech.convert(
+            text=text,
+            voice_id=ELEVENLABS_VOICE_ID,
+            model_id=ELEVENLABS_MODEL,
+            output_format="mp3_44100_128",
+        )
+        eleven_play(audio)
+        return True
+    except Exception as e:
+        print(f"[TTS] ElevenLabs failed ({e}), falling back to offline voice.")
+        return False
+
+
+def _talk_pyttsx3(text):
+    """Speak using the offline pyttsx3 engine."""
     engine.say(text)
     engine.runAndWait()
+
+
+def talk(text):
+    """
+    Make the bot speak the given text aloud.
+    Uses ElevenLabs if available, otherwise falls back to pyttsx3.
+    """
+    print(f"[Bot] {text}")
+    if eleven_client and not _talk_elevenlabs(text):
+        _talk_pyttsx3(text)
+    elif not eleven_client:
+        _talk_pyttsx3(text)
 
 
 # ── Step 3: The "Ears" (Speech-to-Text) ──────────────────────────────────────
